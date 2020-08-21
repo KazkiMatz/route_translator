@@ -205,6 +205,16 @@ class TranslateRoutesTest < ActionController::TestCase
     assert_routing '/foo', controller: 'people', action: 'index', locale: 'en'
   end
 
+  def test_unnamed_localed_route
+    draw_routes do
+      locale :vi do
+        get 'foo', to: 'people#index'
+      end
+    end
+
+    assert_routing '/foo', controller: 'people', action: 'index', locale: 'vi'
+  end
+
   def test_explicitly_unnamed_untranslated_route
     draw_routes do
       localized do
@@ -213,6 +223,16 @@ class TranslateRoutesTest < ActionController::TestCase
     end
 
     assert_routing '/foo', controller: 'people', action: 'index', locale: 'en'
+  end
+
+  def test_explicitly_unnamed_localed_route
+    draw_routes do
+      locale :vi do
+        get 'foo', to: 'people#index', as: nil
+      end
+    end
+
+    assert_routing '/foo', controller: 'people', action: 'index', locale: 'vi'
   end
 
   def test_unnamed_translated_route_on_default_locale
@@ -293,6 +313,20 @@ class TranslateRoutesTest < ActionController::TestCase
     assert_routing '/foo', controller: 'people', action: 'index', locale: 'es'
 
     assert_helpers_include :people_en, :people_es, :people
+  end
+
+  def test_named_localed_route_without_prefix
+    I18n.default_locale = :en
+
+    draw_routes do
+      locale :vi do
+        get 'foo', to: 'people#index', as: 'people'
+      end
+    end
+
+    assert_routing '/foo', controller: 'people', action: 'index', locale: 'vi'
+
+    assert_helpers_include :people_vi, :people
   end
 
   def test_named_translated_route_on_default_locale_without_prefix
@@ -429,9 +463,18 @@ class TranslateRoutesTest < ActionController::TestCase
   def test_force_locale
     config_force_locale true
 
+    I18n.available_locales = %i[es en vi]
+
     draw_routes do
       localized do
         get 'people', to: 'people#index', as: 'people'
+      end
+
+      locale :en do
+        get 'companies', to: 'companies#index', as: 'companies'
+      end
+      locale :vi do
+        get 'cong-ty', to: 'companies#index', as: 'companies'
       end
     end
 
@@ -439,9 +482,20 @@ class TranslateRoutesTest < ActionController::TestCase
     assert_unrecognized_route '/people', controller: 'people', action: 'index'
     assert_equal '/en/people', @routes.url_helpers.people_en_path
     assert_equal '/en/people', @routes.url_helpers.people_path
+
     I18n.with_locale :es do
       # The dynamic route maps to the current locale
       assert_equal '/es/gente', @routes.url_helpers.people_path
+    end
+
+    I18n.with_locale :en do
+      assert_equal '/en/people', @routes.url_helpers.people_path
+      assert_equal '/companies', @routes.url_helpers.companies_path
+    end
+
+    I18n.with_locale :vi do
+      assert_equal '/vi/people', @routes.url_helpers.people_path
+      assert_equal '/cong-ty', @routes.url_helpers.companies_path
     end
   end
 
@@ -629,23 +683,6 @@ class TranslateRoutesTest < ActionController::TestCase
     assert_routing Addressable::URI.normalize_component('/ru/люди'), controller: 'people', action: 'index', locale: 'ru'
     assert_routing '/people', controller: 'people', action: 'index', locale: 'en'
     assert_unrecognized_route '/es/gente', controller: 'people', action: 'index', locale: 'es'
-  end
-
-  def test_config_designated_locale
-    draw_routes do
-      locale(:vi) do
-        scope('vi') do
-          resources :people
-        end
-      end
-
-      locale(:en) do
-        resources :people
-      end
-    end
-
-    assert_routing Addressable::URI.normalize_component('/vi/people'), controller: 'people', action: 'index', locale: 'vi'
-    assert_routing Addressable::URI.normalize_component('/people'), controller: 'people', action: 'index', locale: 'en'
   end
 
   def test_config_available_locales_handles_strings

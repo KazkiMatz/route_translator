@@ -22,21 +22,25 @@ module ActionDispatch
         end
       end
 
-      def add_localed_route(locale, _mapping, path_ast, name, anchor, scope, path, controller, default_action, to, via, formatted, options_constraints, _options)
+      def add_localed_route(locale, mapping, path_ast, name, anchor, scope, path, controller, default_action, to, via, formatted, options_constraints, options)
         #path_ast = ::ActionDispatch::Journey::Parser.parse(translated_path)
 
-        options = _options.merge(locale: locale.to_s)
+        route = RouteTranslator::Route.new(self, path, name, options_constraints, options, mapping)
+        RouteTranslator::Translator::RouteHelpers.add route.name, route.route_set.named_routes
+
+        localed_options = options.merge(locale: locale.to_s)
         scope_params = {
           blocks:      (scope[:blocks] || []).dup,
           constraints: scope[:constraints] || {},
           defaults:    scope[:defaults] || {},
           module:      scope[:module],
-          options:     scope[:options] ? scope[:options].merge(options) : options
+          options:     scope[:options] ? scope[:options].merge(localed_options) : localed_options
         }
 
-        mapping = ::ActionDispatch::Routing::Mapper::Mapping.build scope_params, self, path_ast, controller, default_action, to, via, formatted, options_constraints, anchor, options
+        localed_mapping = ::ActionDispatch::Routing::Mapper::Mapping.build scope_params, self, path_ast, controller, default_action, to, via, formatted, options_constraints, anchor, options
 
-        add_route_to_set mapping, path_ast, name, anchor
+        localed_name = "#{name}_#{locale.to_s.underscore}"
+        add_route_to_set localed_mapping, path_ast, localed_name, anchor
       end
 
       private

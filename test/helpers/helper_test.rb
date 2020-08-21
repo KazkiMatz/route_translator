@@ -23,7 +23,11 @@ class TestHelperTest < ActionView::TestCase
       end
 
       locale :vi do
-        get :helper_kiem_tra, to: 'helper_test#test'
+        get :helper2_kiem_tra, to: 'helper2_test#test', as: 'helper2_test'
+      end
+
+      locale :en do
+        get :helper2_test, to: 'helper2_test#test', as: 'helper2_test'
       end
     end
   end
@@ -34,6 +38,12 @@ class TestHelperTest < ActionView::TestCase
 
   def test_no_private_method_call
     assert_nothing_raised { helper_test_path }
-    assert_nothing_raised { helper_kiem_tra_path }
+
+    assert_nothing_raised { helper2_test_vi_path }
+    assert_equal '/helper2_kiem_tra', helper2_test_vi_path
+    assert_nothing_raised { helper2_test_en_path }
+    assert_equal '/helper2_test', helper2_test_en_path
+    assert_nothing_raised { helper2_test_path }
+    assert_equal '/helper2_test', helper2_test_path
   end
 end
