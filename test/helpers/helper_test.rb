@@ -21,6 +21,10 @@ class TestHelperTest < ActionView::TestCase
       localized do
         get :helper_test, to: 'helper_test#test'
       end
+
+      locale :vi do
+        get :helper_kiem_tra, to: 'helper_test#test'
+      end
     end
   end
 
@@ -30,5 +34,6 @@ class TestHelperTest < ActionView::TestCase
 
   def test_no_private_method_call
     assert_nothing_raised { helper_test_path }
+    assert_nothing_raised { helper_kiem_tra_path }
   end
 end

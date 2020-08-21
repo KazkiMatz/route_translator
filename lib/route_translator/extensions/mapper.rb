@@ -11,9 +11,15 @@ module ActionDispatch
         @localized = false
       end
 
+      def locale(_locale)
+        @locale = _locale
+        yield
+        @locale = nil
+      end
+
       # rubocop:disable Lint/UnderscorePrefixedVariableName, Metrics/PerceivedComplexity
       def add_route(action, controller, options, _path, to, via, formatted, anchor, options_constraints) # :nodoc:
-        return super unless @localized
+        return super unless @localized || @locale.present?
 
         path = path_for_action(action, _path)
         raise ArgumentError, 'path is required' if path.blank?
@@ -37,18 +43,31 @@ module ActionDispatch
         path = Mapping.normalize_path URI.parser.escape(path), formatted
         ast = Journey::Parser.parse path
 
+        if @localed
+          options_constraints = options_constraints.merge(locale: @locale)
+        end
+
         mapping = Mapping.build(@scope, @set, ast, controller, default_action, to, via, formatted, options_constraints, anchor, options)
-        @set.add_localized_route(mapping, ast, as, anchor, @scope, path, controller, default_action, to, via, formatted, options_constraints, options)
+
+        if @localized
+          @set.add_localized_route(mapping, ast, as, anchor, @scope, path, controller, default_action, to, via, formatted, options_constraints, options)
+        elsif @locale.present?
+          @set.add_localed_route(@locale, mapping, ast, as, anchor, @scope, path, controller, default_action, to, via, formatted, options_constraints, options)
+        end
       end
       # rubocop:enable Lint/UnderscorePrefixedVariableName, Metrics/PerceivedComplexity
 
       private
 
       def define_generate_prefix(app, name)
-        return super unless @localized
+        return super unless @localized || @locale.present?
 
-        RouteTranslator::Translator.available_locales.each do |locale|
-          super(app, "#{name}_#{locale.to_s.underscore}")
+        if @localized
+          RouteTranslator::Translator.available_locales.each do |locale|
+            super(app, "#{name}_#{locale.to_s.underscore}")
+          end
+        elsif @locale.present?
+          super(app, "#{name}_#{@locale.to_s.underscore}")
         end
       end
     end

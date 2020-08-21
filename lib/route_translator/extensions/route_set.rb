@@ -22,6 +22,23 @@ module ActionDispatch
         end
       end
 
+      def add_localed_route(locale, _mapping, path_ast, name, anchor, scope, path, controller, default_action, to, via, formatted, options_constraints, _options)
+        #path_ast = ::ActionDispatch::Journey::Parser.parse(translated_path)
+
+        options = _options.merge(locale: locale.to_s)
+        scope_params = {
+          blocks:      (scope[:blocks] || []).dup,
+          constraints: scope[:constraints] || {},
+          defaults:    scope[:defaults] || {},
+          module:      scope[:module],
+          options:     scope[:options] ? scope[:options].merge(options) : options
+        }
+
+        mapping = ::ActionDispatch::Routing::Mapper::Mapping.build scope_params, self, path_ast, controller, default_action, to, via, formatted, options_constraints, anchor, options
+
+        add_route_to_set mapping, path_ast, name, anchor
+      end
+
       private
 
       def translate_mapping(locale, route_set, translated_options, translated_path_ast, scope, controller, default_action, to, formatted, via, translated_options_constraints, anchor)

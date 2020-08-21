@@ -631,6 +631,23 @@ class TranslateRoutesTest < ActionController::TestCase
     assert_unrecognized_route '/es/gente', controller: 'people', action: 'index', locale: 'es'
   end
 
+  def test_config_designated_locale
+    draw_routes do
+      locale(:vi) do
+        scope('vi') do
+          resources :people
+        end
+      end
+
+      locale(:en) do
+        resources :people
+      end
+    end
+
+    assert_routing Addressable::URI.normalize_component('/vi/people'), controller: 'people', action: 'index', locale: 'vi'
+    assert_routing Addressable::URI.normalize_component('/people'), controller: 'people', action: 'index', locale: 'en'
+  end
+
   def test_config_available_locales_handles_strings
     config_available_locales %w[en ru]
 
